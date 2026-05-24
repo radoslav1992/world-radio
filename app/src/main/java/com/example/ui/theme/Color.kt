@@ -24,3 +24,13 @@ val FadedLabel = Color(0xFF9C8B7A)
 
 val RadioRed = Color(0xFFC44536)
 val VinylBlack = Color(0xFF1C1108)
+
+val DialFaceGreen = Color(0xFF1B3326)
+val DialFaceLight = Color(0xFF2A4D3A)
+val GrilleFabric = Color(0xFF3A2518)
+val GrilleSlat = Color(0xFF5A3D28)
+val PilotLampGreen = Color(0xFF39E75F)
+val PilotLampOff = Color(0xFF2A3A2E)
+val ChromeLight = Color(0xFFD0D0D0)
+val ChromeDark = Color(0xFF8A8A8A)
+val NeedleRed = Color(0xFFD4342A)
