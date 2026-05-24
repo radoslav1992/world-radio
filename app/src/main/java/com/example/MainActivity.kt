@@ -904,30 +904,52 @@ fun MiniPlayerBar(
                     .padding(horizontal = 12.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Column {
-                    Text(
-                        text = station.name,
-                        color = AmberBright,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Serif,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = when (playbackState) {
-                            is RadioPlaybackState.Playing -> "ON AIR"
-                            is RadioPlaybackState.Buffering -> "TUNING..."
-                            is RadioPlaybackState.Paused -> "STANDBY"
-                            is RadioPlaybackState.Error -> "NO SIGNAL"
-                            else -> "..."
-                        },
-                        color = if (isPlayingMode) PilotLampGreen.copy(alpha = 0.8f) else FadedLabel,
-                        fontFamily = FontFamily.Serif,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(VinylBlack.copy(alpha = 0.4f))
+                            .border(1.dp, AmberGlow.copy(alpha = 0.3f), RoundedCornerShape(4.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (station.favicon.isNotBlank()) {
+                            AsyncImage(
+                                model = station.favicon,
+                                contentDescription = "Station Logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
+                            )
+                        } else {
+                            Icon(Icons.Default.Radio, contentDescription = null, tint = AmberGlow.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = station.name,
+                            color = AmberBright,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Serif,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = when (playbackState) {
+                                is RadioPlaybackState.Playing -> "ON AIR"
+                                is RadioPlaybackState.Buffering -> "TUNING..."
+                                is RadioPlaybackState.Paused -> "STANDBY"
+                                is RadioPlaybackState.Error -> "NO SIGNAL"
+                                else -> "..."
+                            },
+                            color = if (isPlayingMode) PilotLampGreen.copy(alpha = 0.8f) else FadedLabel,
+                            fontFamily = FontFamily.Serif,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp
+                        )
+                    }
                 }
             }
 
@@ -1258,7 +1280,34 @@ fun FullscreenPlayerDialog(
                             .height(120.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Station logo
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(WalnutLight, VinylBlack)
+                                )
+                            )
+                            .border(2.dp, BrassGold.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (station.favicon.isNotBlank()) {
+                            AsyncImage(
+                                model = station.favicon,
+                                contentDescription = "Station Logo",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp))
+                            )
+                        } else {
+                            Icon(Icons.Default.Radio, contentDescription = null, tint = AmberGlow.copy(alpha = 0.7f), modifier = Modifier.size(32.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Tuning dial window
                     Box(
