@@ -27,8 +27,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -826,28 +832,36 @@ fun MiniPlayerBar(
     onExpand: () -> Unit
 ) {
     val isFav = favorites.any { it.stationuuid == station.stationuuid }
+    val isPlayingMode = playbackState is RadioPlaybackState.Playing
 
     val infiniteTransition = rememberInfiniteTransition()
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
+    val pilotGlow by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
+            animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         )
     )
 
-    val isPlayingMode = playbackState is RadioPlaybackState.Playing
-
-    Card(
-        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1109)),
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF3A2518),
+                        Color(0xFF2C1810),
+                        Color(0xFF1E1109)
+                    )
+                )
+            )
             .border(
-                width = 1.dp,
-                color = AmberGlow.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                width = 2.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(BrassGold.copy(alpha = 0.5f), BrassGold.copy(alpha = 0.15f))
+                ),
+                shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
             )
             .clickable { onExpand() }
             .testTag("mini_player_bar")
@@ -855,120 +869,288 @@ fun MiniPlayerBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Glowing indicator light
+            // Pilot lamp
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
+                    .size(10.dp)
                     .background(
                         Brush.radialGradient(
-                            colors = listOf(
-                                if (isPlayingMode) DialGreen.copy(alpha = glowAlpha) else FadedLabel.copy(alpha = 0.3f),
-                                VinylBlack
-                            )
+                            colors = if (isPlayingMode)
+                                listOf(PilotLampGreen.copy(alpha = pilotGlow), PilotLampGreen.copy(alpha = 0.3f))
+                            else
+                                listOf(PilotLampOff, PilotLampOff.copy(alpha = 0.5f))
+                        ),
+                        CircleShape
+                    )
+                    .border(1.dp, BrassGold.copy(alpha = 0.5f), CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Tuning dial window
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(DialFaceGreen, DialFaceLight, DialFaceGreen)
                         )
                     )
-                    .border(2.dp, BrassGold.copy(alpha = 0.4f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .border(1.dp, BrassGold.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
-                if (station.favicon.isNotBlank()) {
-                    AsyncImage(
-                        model = station.favicon,
-                        contentDescription = "Station Logo",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().clip(CircleShape)
-                    )
-                } else {
-                    Icon(Icons.Default.Radio, contentDescription = null, tint = AmberGlow, modifier = Modifier.size(20.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = station.name,
-                    color = CreamWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Serif,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val statusText = when (playbackState) {
-                        is RadioPlaybackState.Playing -> "On Air"
-                        is RadioPlaybackState.Buffering -> "Tuning..."
-                        is RadioPlaybackState.Paused -> "Standby"
-                        is RadioPlaybackState.Error -> "No Signal"
-                        else -> "Connecting"
-                    }
-                    val statusColor = when (playbackState) {
-                        is RadioPlaybackState.Playing -> DialGreen
-                        is RadioPlaybackState.Buffering -> AmberBright
-                        is RadioPlaybackState.Error -> RadioRed
-                        else -> FadedLabel
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(statusColor, CircleShape)
-                    )
+                Column {
                     Text(
-                        text = statusText,
-                        color = FadedLabel,
+                        text = station.name,
+                        color = AmberBright,
+                        fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Serif,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = when (playbackState) {
+                            is RadioPlaybackState.Playing -> "ON AIR"
+                            is RadioPlaybackState.Buffering -> "TUNING..."
+                            is RadioPlaybackState.Paused -> "STANDBY"
+                            is RadioPlaybackState.Error -> "NO SIGNAL"
+                            else -> "..."
+                        },
+                        color = if (isPlayingMode) PilotLampGreen.copy(alpha = 0.8f) else FadedLabel,
+                        fontFamily = FontFamily.Serif,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
                 }
             }
 
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(44.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Preset knob
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                if (isFav) AmberBright else ChromeDark,
+                                if (isFav) BrassGold else Color(0xFF4A4A4A)
+                            )
+                        ),
+                        CircleShape
+                    )
+                    .border(1.5.dp, BrassGold.copy(alpha = 0.6f), CircleShape)
+                    .clickable { onToggleFavorite() },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
-                    contentDescription = "Preset Button",
-                    tint = if (isFav) AmberBright else FadedLabel
+                    contentDescription = "Preset",
+                    tint = if (isFav) VinylBlack else CreamWhite.copy(alpha = 0.7f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
-            IconButton(
-                onClick = onTogglePlayPause,
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Play/pause knob
+            Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(MahoganyPanel, CircleShape)
-                    .border(1.dp, BrassGold.copy(alpha = 0.4f), CircleShape)
+                    .size(40.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(MahoganyPanel, Color(0xFF2A1508))
+                        ),
+                        CircleShape
+                    )
+                    .border(
+                        2.dp,
+                        Brush.linearGradient(
+                            colors = listOf(BrassLight, BrassGold, BrassLight)
+                        ),
+                        CircleShape
+                    )
+                    .clickable { onTogglePlayPause() },
+                contentAlignment = Alignment.Center
             ) {
                 when (playbackState) {
                     is RadioPlaybackState.Buffering -> {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(16.dp),
                             color = AmberGlow,
                             strokeWidth = 2.dp
                         )
                     }
                     is RadioPlaybackState.Playing -> {
-                        Icon(Icons.Default.Pause, contentDescription = "Pause", tint = AmberGlow)
+                        Icon(Icons.Default.Pause, contentDescription = "Pause", tint = AmberGlow, modifier = Modifier.size(18.dp))
                     }
                     else -> {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AmberGlow)
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AmberGlow, modifier = Modifier.size(18.dp))
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SpeakerGrille(modifier: Modifier = Modifier) {
+    val fabricColor = GrilleFabric
+    val slatColor = GrilleSlat
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(fabricColor)
+            .drawBehind {
+                val slatSpacing = 6.dp.toPx()
+                val slatHeight = 2.dp.toPx()
+                var y = slatSpacing
+                while (y < size.height) {
+                    drawRoundRect(
+                        color = slatColor,
+                        topLeft = Offset(4.dp.toPx(), y),
+                        size = Size(size.width - 8.dp.toPx(), slatHeight),
+                        cornerRadius = CornerRadius(1.dp.toPx())
+                    )
+                    y += slatSpacing
+                }
+            }
+            .border(2.dp, BrassGold.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+    )
+}
+
+@Composable
+fun VuMeter(level: Float, modifier: Modifier = Modifier) {
+    val needleColor = NeedleRed
+    val arcColor = CreamWhite
+    val tickColor = FadedLabel
+    Box(
+        modifier = modifier
+            .drawBehind {
+                val cx = size.width / 2f
+                val cy = size.height * 0.85f
+                val radius = size.width * 0.4f
+
+                drawArc(
+                    color = arcColor.copy(alpha = 0.15f),
+                    startAngle = 200f,
+                    sweepAngle = 140f,
+                    useCenter = false,
+                    topLeft = Offset(cx - radius, cy - radius),
+                    size = Size(radius * 2, radius * 2),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+
+                for (i in 0..10) {
+                    val angle = 200f + (i * 14f)
+                    val rad = Math.toRadians(angle.toDouble())
+                    val innerR = radius * 0.85f
+                    val outerR = radius * 1.0f
+                    drawLine(
+                        color = if (i > 7) needleColor.copy(alpha = 0.6f) else tickColor.copy(alpha = 0.5f),
+                        start = Offset(
+                            cx + (innerR * Math.cos(rad)).toFloat(),
+                            cy + (innerR * Math.sin(rad)).toFloat()
+                        ),
+                        end = Offset(
+                            cx + (outerR * Math.cos(rad)).toFloat(),
+                            cy + (outerR * Math.sin(rad)).toFloat()
+                        ),
+                        strokeWidth = if (i % 5 == 0) 2.dp.toPx() else 1.dp.toPx()
+                    )
+                }
+
+                val needleAngle = 200f + (level * 140f)
+                val needleRad = Math.toRadians(needleAngle.toDouble())
+                val needleLen = radius * 0.9f
+                drawLine(
+                    color = needleColor,
+                    start = Offset(cx, cy),
+                    end = Offset(
+                        cx + (needleLen * Math.cos(needleRad)).toFloat(),
+                        cy + (needleLen * Math.sin(needleRad)).toFloat()
+                    ),
+                    strokeWidth = 2.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                drawCircle(
+                    color = needleColor,
+                    radius = 3.dp.toPx(),
+                    center = Offset(cx, cy)
+                )
+            }
+    )
+}
+
+@Composable
+fun RadioKnob(
+    modifier: Modifier = Modifier,
+    rotation: Float = 0f,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF4A3020),
+                        Color(0xFF2A1508),
+                        Color(0xFF1A0A02)
+                    )
+                ),
+                CircleShape
+            )
+            .border(
+                3.dp,
+                Brush.sweepGradient(
+                    colors = listOf(
+                        BrassLight,
+                        BrassGold.copy(alpha = 0.6f),
+                        BrassLight,
+                        BrassGold.copy(alpha = 0.4f),
+                        BrassLight
+                    )
+                ),
+                CircleShape
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        // Knob notch indicator
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    val cx = size.width / 2f
+                    val notchRad = Math.toRadians((rotation - 90.0))
+                    val innerR = size.width * 0.25f
+                    val outerR = size.width * 0.42f
+                    drawLine(
+                        color = BrassLight,
+                        start = Offset(
+                            cx + (innerR * Math.cos(notchRad)).toFloat(),
+                            cx + (innerR * Math.sin(notchRad)).toFloat()
+                        ),
+                        end = Offset(
+                            cx + (outerR * Math.cos(notchRad)).toFloat(),
+                            cx + (outerR * Math.sin(notchRad)).toFloat()
+                        ),
+                        strokeWidth = 2.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
+        )
+        content()
     }
 }
 
@@ -985,18 +1167,25 @@ fun FullscreenPlayerDialog(
 ) {
     val isFav = favorites.any { it.stationuuid == station.stationuuid }
     var scaleVolume by remember { mutableStateOf(1.0f) }
+    val isPlayingMode = playbackState is RadioPlaybackState.Playing
 
     val infiniteTransition = rememberInfiniteTransition()
-    val dialGlow by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
+    val pilotGlow by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         )
     )
-
-    val isPlayingMode = playbackState is RadioPlaybackState.Playing
+    val vuLevel by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1004,7 +1193,7 @@ fun FullscreenPlayerDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = VinylBlack
+            color = Color(0xFF0A0604)
         ) {
             Box(
                 modifier = Modifier
@@ -1012,22 +1201,46 @@ fun FullscreenPlayerDialog(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF2C1810),
                                 Color(0xFF1A0F07),
                                 Color(0xFF0D0704)
                             )
                         )
                     )
                     .safeDrawingPadding()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
+                // The radio cabinet
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF4A2C1A),
+                                    Color(0xFF3A2010),
+                                    Color(0xFF2C1810),
+                                    Color(0xFF3A2010),
+                                    Color(0xFF4A2C1A)
+                                )
+                            )
+                        )
+                        .border(
+                            3.dp,
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    BrassGold.copy(alpha = 0.5f),
+                                    BrassGold.copy(alpha = 0.2f),
+                                    BrassGold.copy(alpha = 0.5f)
+                                )
+                            ),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Header
+                    // Top: close button row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1035,254 +1248,331 @@ fun FullscreenPlayerDialog(
                     ) {
                         IconButton(
                             onClick = onDismiss,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(WalnutMedium, CircleShape)
-                                .border(1.dp, BrassGold.copy(alpha = 0.3f), CircleShape)
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Go back", tint = CreamWhite)
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Close",
+                                tint = FadedLabel,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-
                         Text(
-                            text = "Now Playing",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = "WORLD RADIO",
                             fontFamily = FontFamily.Serif,
-                            color = AmberGlow
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = BrassGold,
+                            letterSpacing = 3.sp
                         )
-
                         IconButton(
                             onClick = onToggleFavorite,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(WalnutMedium, CircleShape)
-                                .border(1.dp, BrassGold.copy(alpha = 0.3f), CircleShape)
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
-                                contentDescription = "Preset button",
-                                tint = if (isFav) AmberBright else CreamWhite
+                                contentDescription = "Preset",
+                                tint = if (isFav) AmberBright else FadedLabel,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
 
-                    // Vintage dial display
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(220.dp)
-                                .border(
-                                    6.dp,
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            BrassGold.copy(alpha = 0.6f),
-                                            BrassLight.copy(alpha = 0.8f),
-                                            BrassGold.copy(alpha = 0.4f)
-                                        )
-                                    ),
-                                    CircleShape
-                                )
-                                .padding(6.dp)
-                                .border(2.dp, AmberGlow.copy(alpha = if (isPlayingMode) dialGlow else 0.2f), CircleShape)
-                                .padding(4.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            WalnutLight,
-                                            VinylBlack
-                                        )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Speaker grille
+                    SpeakerGrille(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Tuning dial window
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        DialFaceGreen.copy(alpha = 0.9f),
+                                        DialFaceLight,
+                                        DialFaceGreen.copy(alpha = 0.9f)
                                     )
-                                ),
-                            contentAlignment = Alignment.Center
+                                )
+                            )
+                            .border(2.dp, BrassGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                            .drawBehind {
+                                // Frequency tick marks
+                                val tickCount = 20
+                                val startX = 16.dp.toPx()
+                                val endX = size.width - 16.dp.toPx()
+                                val tickY = size.height * 0.2f
+                                val tickWidth = (endX - startX) / tickCount
+
+                                for (i in 0..tickCount) {
+                                    val x = startX + (i * tickWidth)
+                                    val isMajor = i % 5 == 0
+                                    drawLine(
+                                        color = AmberGlow.copy(alpha = if (isMajor) 0.6f else 0.3f),
+                                        start = Offset(x, tickY),
+                                        end = Offset(x, tickY + if (isMajor) 12.dp.toPx() else 6.dp.toPx()),
+                                        strokeWidth = if (isMajor) 1.5f else 1f
+                                    )
+                                }
+
+                                // Red tuning needle
+                                val needleX = size.width * 0.5f
+                                drawLine(
+                                    color = NeedleRed,
+                                    start = Offset(needleX, tickY - 4.dp.toPx()),
+                                    end = Offset(needleX, size.height * 0.85f),
+                                    strokeWidth = 2.dp.toPx(),
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                            .padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 20.dp)
                         ) {
-                            if (station.favicon.isNotBlank()) {
-                                AsyncImage(
-                                    model = station.favicon,
-                                    contentDescription = "Station Logo",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                Icon(Icons.Default.Radio, contentDescription = null, tint = AmberGlow.copy(alpha = 0.8f), modifier = Modifier.size(64.dp))
-                            }
-                        }
-
-                        // Signal indicator bars
-                        if (isPlayingMode) {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Row(
-                                modifier = Modifier.height(20.dp),
-                                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                verticalAlignment = Alignment.Bottom
-                            ) {
-                                repeat(7) { i ->
-                                    val pulseAnim = rememberInfiniteTransition()
-                                    val h by pulseAnim.animateFloat(
-                                        initialValue = 4f,
-                                        targetValue = 20f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(500 + (i * 100), easing = LinearEasing),
-                                            repeatMode = RepeatMode.Reverse
-                                        )
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .width(3.dp)
-                                            .height(h.dp)
-                                            .background(
-                                                if (i < 3) DialGreen
-                                                else if (i < 5) AmberGlow
-                                                else TubeOrange,
-                                                RoundedCornerShape(1.dp)
-                                            )
-                                    )
-                                }
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.height(40.dp))
+                            Text(
+                                text = station.name,
+                                fontFamily = FontFamily.Serif,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = AmberBright,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = listOfNotNull(
+                                    station.country.ifEmpty { null },
+                                    station.language.ifEmpty { null }
+                                ).joinToString("  •  ").ifEmpty { "Worldwide" },
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 12.sp,
+                                color = CreamWhite.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
 
-                    // Station info
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = station.name,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif,
-                            color = CreamWhite,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = listOfNotNull(
-                                station.country.ifEmpty { null },
-                                station.language.ifEmpty { null }
-                            ).joinToString("  •  "),
-                            fontSize = 14.sp,
-                            fontFamily = FontFamily.Serif,
-                            color = FadedLabel,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        if (station.tags.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(14.dp))
-                            val cleanTags = station.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }.take(3)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                cleanTags.forEach { tag ->
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 4.dp)
-                                            .background(BrassGold.copy(alpha = 0.1f), RoundedCornerShape(100.dp))
-                                            .border(1.dp, BrassGold.copy(alpha = 0.3f), RoundedCornerShape(100.dp))
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(tag.uppercase(), fontSize = 10.sp, color = BrassGold, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Play/Pause control
+                    // Pilot lamp + status row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = onTogglePlayPause,
+                        // Pilot lamp
+                        Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(12.dp)
                                 .background(
                                     Brush.radialGradient(
-                                        colors = listOf(MahoganyPanel, WalnutDark)
+                                        colors = if (isPlayingMode)
+                                            listOf(
+                                                PilotLampGreen.copy(alpha = pilotGlow),
+                                                PilotLampGreen.copy(alpha = 0.4f),
+                                                Color.Transparent
+                                            )
+                                        else
+                                            listOf(PilotLampOff, PilotLampOff.copy(alpha = 0.5f), Color.Transparent)
                                     ),
                                     CircleShape
                                 )
-                                .border(
-                                    3.dp,
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            BrassGold.copy(alpha = 0.7f),
-                                            BrassLight.copy(alpha = 0.9f),
-                                            BrassGold.copy(alpha = 0.5f)
-                                        )
-                                    ),
-                                    CircleShape
-                                )
+                                .border(1.dp, BrassGold.copy(alpha = 0.5f), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = when (playbackState) {
+                                is RadioPlaybackState.Playing -> "ON AIR"
+                                is RadioPlaybackState.Buffering -> "TUNING..."
+                                is RadioPlaybackState.Paused -> "STANDBY"
+                                is RadioPlaybackState.Error -> "NO SIGNAL"
+                                else -> "READY"
+                            },
+                            fontFamily = FontFamily.Serif,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = if (isPlayingMode) PilotLampGreen else FadedLabel,
+                            letterSpacing = 2.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // VU meter
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(VinylBlack)
+                            .border(1.dp, BrassGold.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    ) {
+                        VuMeter(
+                            level = if (isPlayingMode) vuLevel else 0.05f,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Text(
+                            text = "VU",
+                            fontFamily = FontFamily.Serif,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CreamWhite.copy(alpha = 0.4f),
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp)
+                        )
+                    }
+
+                    // Tags
+                    if (station.tags.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        val cleanTags = station.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }.take(3)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            when (playbackState) {
-                                is RadioPlaybackState.Buffering -> {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(28.dp),
-                                        color = AmberGlow,
-                                        strokeWidth = 3.dp
+                            cleanTags.forEach { tag ->
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 3.dp)
+                                        .background(BrassGold.copy(alpha = 0.08f), RoundedCornerShape(100.dp))
+                                        .border(1.dp, BrassGold.copy(alpha = 0.25f), RoundedCornerShape(100.dp))
+                                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        tag.uppercase(),
+                                        fontSize = 9.sp,
+                                        color = BrassGold,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Serif
                                     )
-                                }
-                                is RadioPlaybackState.Playing -> {
-                                    Icon(Icons.Default.Pause, contentDescription = "Pause", tint = AmberGlow, modifier = Modifier.size(36.dp))
-                                }
-                                else -> {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AmberGlow, modifier = Modifier.size(36.dp))
                                 }
                             }
                         }
                     }
 
-                    // Volume knob (slider)
-                    Column(
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Knobs row: Volume — Play/Pause — Tuning
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Volume knob
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            RadioKnob(
+                                modifier = Modifier.size(56.dp),
+                                rotation = scaleVolume * 270f,
+                                onClick = {}
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                "VOLUME",
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrassGold.copy(alpha = 0.7f),
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        // Play/Pause knob (larger, center)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            RadioKnob(
+                                modifier = Modifier.size(72.dp),
+                                rotation = 0f,
+                                onClick = onTogglePlayPause
+                            ) {
+                                when (playbackState) {
+                                    is RadioPlaybackState.Buffering -> {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = AmberGlow,
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                    is RadioPlaybackState.Playing -> {
+                                        Icon(Icons.Default.Pause, contentDescription = "Pause", tint = AmberGlow, modifier = Modifier.size(28.dp))
+                                    }
+                                    else -> {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = AmberGlow, modifier = Modifier.size(28.dp))
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                if (isPlayingMode) "PAUSE" else "PLAY",
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrassGold.copy(alpha = 0.7f),
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        // Tone/preset knob
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            RadioKnob(
+                                modifier = Modifier.size(56.dp),
+                                rotation = 135f,
+                                onClick = onToggleFavorite
+                            ) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                    contentDescription = "Preset",
+                                    tint = if (isFav) AmberBright else FadedLabel,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                "PRESET",
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrassGold.copy(alpha = 0.7f),
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Volume slider
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "VOLUME",
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily.Serif,
-                            fontWeight = FontWeight.Bold,
-                            color = FadedLabel,
-                            letterSpacing = 2.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                        Icon(Icons.Default.VolumeMute, contentDescription = null, tint = FadedLabel, modifier = Modifier.size(16.dp))
+                        Slider(
+                            value = scaleVolume,
+                            onValueChange = {
+                                scaleVolume = it
+                                onVolumeChange(it)
+                            },
+                            colors = SliderDefaults.colors(
+                                thumbColor = BrassGold,
+                                activeTrackColor = AmberGlow,
+                                inactiveTrackColor = WalnutDark
+                            ),
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.VolumeMute, contentDescription = null, tint = FadedLabel)
-                            Slider(
-                                value = scaleVolume,
-                                onValueChange = {
-                                    scaleVolume = it
-                                    onVolumeChange(it)
-                                },
-                                colors = SliderDefaults.colors(
-                                    thumbColor = BrassGold,
-                                    activeTrackColor = AmberGlow,
-                                    inactiveTrackColor = WalnutLight
-                                ),
-                                modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
-                            )
-                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = AmberGlow)
-                        }
+                        Icon(Icons.Default.VolumeUp, contentDescription = null, tint = AmberGlow, modifier = Modifier.size(16.dp))
                     }
                 }
             }
