@@ -1,4 +1,4 @@
-package com.example.data.model
+package com.mindtocode.worldradio.data.model
 
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Json

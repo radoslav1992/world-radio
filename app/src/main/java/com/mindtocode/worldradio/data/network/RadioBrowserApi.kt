@@ -1,8 +1,8 @@
-package com.example.data.network
+package com.mindtocode.worldradio.data.network
 
-import com.example.data.model.NetworkCountry
-import com.example.data.model.NetworkLanguage
-import com.example.data.model.NetworkStation
+import com.mindtocode.worldradio.data.model.NetworkCountry
+import com.mindtocode.worldradio.data.model.NetworkLanguage
+import com.mindtocode.worldradio.data.model.NetworkStation
 import retrofit2.http.GET
 import retrofit2.http.Query
 

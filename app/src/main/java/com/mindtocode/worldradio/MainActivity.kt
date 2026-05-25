@@ -1,4 +1,4 @@
-package com.example
+package com.mindtocode.worldradio
 
 import android.app.Application
 import android.os.Bundle
@@ -48,20 +48,20 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.data.database.AppDatabase
-import com.example.data.model.NetworkCountry
-import com.example.data.model.NetworkLanguage
-import com.example.data.model.StationEntity
-import com.example.data.network.RetrofitInstance
-import com.example.data.repository.RadioRepository
-import com.example.player.RadioPlaybackState
-import com.example.player.RadioPlayerManager
-import com.example.ui.CountriesUiState
-import com.example.ui.LanguagesUiState
-import com.example.ui.RadioViewModel
-import com.example.ui.RadioViewModelFactory
-import com.example.ui.StationsUiState
-import com.example.ui.theme.*
+import com.mindtocode.worldradio.data.database.AppDatabase
+import com.mindtocode.worldradio.data.model.NetworkCountry
+import com.mindtocode.worldradio.data.model.NetworkLanguage
+import com.mindtocode.worldradio.data.model.StationEntity
+import com.mindtocode.worldradio.data.network.RetrofitInstance
+import com.mindtocode.worldradio.data.repository.RadioRepository
+import com.mindtocode.worldradio.player.RadioPlaybackState
+import com.mindtocode.worldradio.player.RadioPlayerManager
+import com.mindtocode.worldradio.ui.CountriesUiState
+import com.mindtocode.worldradio.ui.LanguagesUiState
+import com.mindtocode.worldradio.ui.RadioViewModel
+import com.mindtocode.worldradio.ui.RadioViewModelFactory
+import com.mindtocode.worldradio.ui.StationsUiState
+import com.mindtocode.worldradio.ui.theme.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

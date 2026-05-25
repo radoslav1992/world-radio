@@ -1,9 +1,9 @@
-package com.example.data.repository
+package com.mindtocode.worldradio.data.repository
 
-import com.example.data.database.StationDao
-import com.example.data.model.NetworkStation
-import com.example.data.model.StationEntity
-import com.example.data.network.RadioBrowserApi
+import com.mindtocode.worldradio.data.database.StationDao
+import com.mindtocode.worldradio.data.model.NetworkStation
+import com.mindtocode.worldradio.data.model.StationEntity
+import com.mindtocode.worldradio.data.network.RadioBrowserApi
 import kotlinx.coroutines.flow.Flow
 
 class RadioRepository(

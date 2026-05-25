@@ -1,7 +1,7 @@
-package com.example.data.database
+package com.mindtocode.worldradio.data.database
 
 import androidx.room.*
-import com.example.data.model.StationEntity
+import com.mindtocode.worldradio.data.model.StationEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
